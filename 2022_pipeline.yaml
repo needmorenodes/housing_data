@@ -1,0 +1,126 @@
+# Database configuration
+database:
+  path: "data/medallion.db"
+  type: "duckdb"
+
+# Source data configurations
+sources:
+  crosswalk:
+    zip_tract:
+      path: "chosen_data/crosswalk/zip_tract/"
+      year: 2022
+      required_columns:
+        - "ZIP"
+        - "TRACT"
+        - "RES_RATIO"
+        - "BUS_RATIO"
+        - "OTH_RATIO"
+        - "TOT_RATIO"
+      table_schema: "ZIP BIGINT, TRACT BIGINT, RES_RATIO DOUBLE, BUS_RATIO DOUBLE, OTH_RATIO DOUBLE, TOT_RATIO DOUBLE, start_date DATE, end_date DATE, load_quarter VARCHAR"
+  
+  svi:
+    path: "chosen_data/svi/"
+    year: 2022
+    required_columns:
+      - "STATE"
+      - "ST_ABBR"
+      - "STCNTY"
+      - "COUNTY"
+      - "FIPS"
+      - "LOCATION"
+      - "RPL_THEME1"
+      - "RPL_THEME2"
+      - "RPL_THEME3"
+      - "RPL_THEME4"
+      - "RPL_THEMES"
+    table_schema: "STATE VARCHAR, ST_ABBR VARCHAR, STCNTY BIGINT, COUNTY VARCHAR, FIPS BIGINT, LOCATION VARCHAR, RPL_THEME1 DOUBLE, RPL_THEME2 DOUBLE, RPL_THEME3 DOUBLE, RPL_THEME4 DOUBLE, RPL_THEMES DOUBLE, year BIGINT"
+  
+  zillow:
+    zhvi_sfr_zip:
+      path: "chosen_data/zillow/Zip_zhvi_uc_sfrcondo_tier_0.33_0.67_sm_sa_month.csv"
+      year: 2022
+      required_columns:
+        - "RegionID"
+        - "RegionName"
+        - "RegionType"
+        - "StateName"
+        - "State"
+        - "City"
+        - "Metro"
+        - "CountyName"
+      table_schema: "RegionID BIGINT, RegionName BIGINT, RegionType VARCHAR, StateName VARCHAR, State VARCHAR, City VARCHAR, Metro VARCHAR, CountyName VARCHAR, date VARCHAR, zhvi DOUBLE"
+
+# Transformation table configs
+transformations:
+  tracts_per_zip:
+    transform: CREATE_OR_REPLACE
+    sql: > 
+      SELECT 
+        ZIP as zip, 
+        start_date, 
+        end_date, 
+        len(list(TRACT)) as len_tracts, 
+        list(TRACT) as tracts 
+      FROM (
+          SELECT 
+              ZIP, 
+              TRACT, 
+              start_date, 
+              end_date 
+          FROM zip_tract 
+          GROUP BY 
+              ZIP, 
+              TRACT, 
+              start_date, 
+              end_date
+          ) 
+      GROUP BY
+          ZIP, 
+          start_date, 
+          end_date 
+      ORDER BY zip, start_date DESC
+
+  zhvi_sfr_zip_with_tracts:
+    transform: CREATE_OR_REPLACE
+    sql: > 
+      SELECT 
+          RegionName, 
+          zip, 
+          date, 
+          zhvi, 
+          list_sort(tracts) as tracts
+      FROM (
+          SELECT 
+              * 
+          FROM zhvi_sfr_zip z 
+          LEFT JOIN tracts_per_zip cw 
+          ON 
+              z.RegionName = cw.zip AND 
+              z.date::DATE >= cw.start_date AND 
+              z.date::DATE <= cw.end_date
+      ) WHERE tracts is not null
+      
+  zhvi_sfr_zip_with_svi: 
+    transform: CREATE_OR_REPLACE
+    sql: > 
+      SELECT 
+        RegionName,
+        zip,
+        date,
+        zhvi,
+        mean(RPL_THEME1) AS mean_rpl_theme1,
+        median(RPL_THEME1) AS median_rpl_theme1,
+        mean(RPL_THEME2) AS mean_rpl_theme2,
+        median(RPL_THEME2) AS median_rpl_theme2,
+        mean(RPL_THEME3) AS mean_rpl_theme3,
+        median(RPL_THEME4) AS median_rpl_theme3,
+        mean(RPL_THEME4) AS mean_rpl_theme4,
+        median(RPL_THEME4) AS median_rpl_theme4,
+        mean(RPL_THEMES) AS mean_rpl_themes,
+        median(RPL_THEMES) AS median_rpl_themes,
+      FROM (SELECT * FROM zhvi_sfr_zip_with_tracts z LEFT JOIN svi s ON s.year = year(z.date::DATE) AND s.FIPS IN z.tracts) GROUP BY         
+        RegionName,
+        zip,
+        date,
+        zhvi
+      
