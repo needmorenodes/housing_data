@@ -103,24 +103,32 @@ transformations:
   zhvi_sfr_zip_with_svi: 
     transform: CREATE_OR_REPLACE
     sql: > 
-      SELECT 
-        RegionName,
-        zip,
-        date,
-        zhvi,
-        mean(RPL_THEME1) AS mean_rpl_theme1,
-        median(RPL_THEME1) AS median_rpl_theme1,
-        mean(RPL_THEME2) AS mean_rpl_theme2,
-        median(RPL_THEME2) AS median_rpl_theme2,
-        mean(RPL_THEME3) AS mean_rpl_theme3,
-        median(RPL_THEME4) AS median_rpl_theme3,
-        mean(RPL_THEME4) AS mean_rpl_theme4,
-        median(RPL_THEME4) AS median_rpl_theme4,
-        mean(RPL_THEMES) AS mean_rpl_themes,
-        median(RPL_THEMES) AS median_rpl_themes,
-      FROM (SELECT * FROM zhvi_sfr_zip_with_tracts z LEFT JOIN svi s ON s.year = year(z.date::DATE) AND s.FIPS IN z.tracts) GROUP BY         
-        RegionName,
-        zip,
-        date,
-        zhvi
+      WITH filtered_svi AS (SELECT 
+              RegionName,
+              StateName,
+              zip,
+              date,
+              zhvi,
+              list_filter(list(RPL_THEME1), x -> x > -999) AS available_rpl_theme1,
+              list_filter(list(RPL_THEME2), x -> x > -999) AS available_rpl_theme2,
+              list_filter(list(RPL_THEME3), x -> x > -999) AS available_rpl_theme3,
+              list_filter(list(RPL_THEME4), x -> x > -999) AS available_rpl_theme4,
+              list_filter(list(RPL_THEMES), x -> x > -999) AS available_rpl_themes,
+            FROM (SELECT * FROM zhvi_sfr_zip_with_tracts z LEFT JOIN svi s ON s.year = year(z.date::DATE) AND s.FIPS IN z.tracts) GROUP BY         
+              RegionName,
+              StateName,
+              zip,
+              date,
+              zhvi)
+      SELECT  RegionName,
+              StateName,
+              zip,
+              date,
+              zhvi,
+              list_aggregate(available_rpl_theme1, 'mean') as avg_rpl_theme1,
+              list_aggregate(available_rpl_theme2, 'mean') as avg_rpl_theme2,
+              list_aggregate(available_rpl_theme3, 'mean') as avg_rpl_theme3,
+              list_aggregate(available_rpl_theme4, 'mean') as avg_rpl_theme4,
+              list_aggregate(available_rpl_themes, 'mean') as avg_rpl_themes
+              FROM filtered_svi 
       

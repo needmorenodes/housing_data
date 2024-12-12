@@ -357,7 +357,6 @@ class MedallionPipeline:
     def _load_zillow_bronze(self, sources):
         """Function for processing zillow files to bronze."""
 
-        
         for source in sources:
             with self._open_connection() as conn:
                 print(f"\t\tLoading zillow tables")
@@ -389,7 +388,7 @@ class MedallionPipeline:
                             VALUE zhvi
                         );
                     """
-                    )
+                )
 
     def load_bronze(self):
         """Function for loading all bronze/source data"""
@@ -427,7 +426,9 @@ class MedallionPipeline:
                         f"CREATE OR REPLACE TABLE {transformation.table_name} AS ({transformation.sql})"
                     )
                 elif transformation.transform == "INSERT":
-                    conn.sql(f"INSERT INTO {transformation.table_name} FROM ({transformation.sql})")
+                    conn.sql(
+                        f"INSERT INTO {transformation.table_name} FROM ({transformation.sql})"
+                    )
                 else:
                     raise ValueError(
                         "Unsupported Transformation, only INSERT and CREATE_OR_REPLACE supported"
