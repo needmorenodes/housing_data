@@ -74,7 +74,7 @@ class MedallionPipeline:
         }
 
         # The only true required config is the database configuration
-        # TODO: Confirmation could be more genaric based on the dataclasses above
+        # TODO: Configuration could be more genaric based on the dataclasses above
         if "database" not in self.config:
             raise ValueError("Database configuration is missing")
 
