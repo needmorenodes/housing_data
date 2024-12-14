@@ -5,20 +5,21 @@ database:
 
 # Source data configurations
 sources:
-  crosswalk:
-    zip_tract:
-      path: "chosen_data/crosswalk/zip_tract/"
-      year: 2022
-      required_columns:
-        - "ZIP"
-        - "TRACT"
-        - "RES_RATIO"
-        - "BUS_RATIO"
-        - "OTH_RATIO"
-        - "TOT_RATIO"
-      table_schema: "ZIP BIGINT, TRACT BIGINT, RES_RATIO DOUBLE, BUS_RATIO DOUBLE, OTH_RATIO DOUBLE, TOT_RATIO DOUBLE, start_date DATE, end_date DATE, load_quarter VARCHAR"
+  zip_tract:
+    type: crosswalk
+    path: "chosen_data/crosswalk/zip_tract/"
+    year: 2022
+    required_columns:
+      - "ZIP"
+      - "TRACT"
+      - "RES_RATIO"
+      - "BUS_RATIO"
+      - "OTH_RATIO"
+      - "TOT_RATIO"
+    table_schema: "ZIP BIGINT, TRACT BIGINT, RES_RATIO DOUBLE, BUS_RATIO DOUBLE, OTH_RATIO DOUBLE, TOT_RATIO DOUBLE, start_date DATE, end_date DATE, load_quarter VARCHAR"
   
   svi:
+    type: svi
     path: "chosen_data/svi/"
     year: 2022
     required_columns:
@@ -34,21 +35,21 @@ sources:
       - "RPL_THEME4"
       - "RPL_THEMES"
     table_schema: "STATE VARCHAR, ST_ABBR VARCHAR, STCNTY BIGINT, COUNTY VARCHAR, FIPS BIGINT, LOCATION VARCHAR, RPL_THEME1 DOUBLE, RPL_THEME2 DOUBLE, RPL_THEME3 DOUBLE, RPL_THEME4 DOUBLE, RPL_THEMES DOUBLE, year BIGINT"
-  
-  zillow:
-    zhvi_sfr_zip:
-      path: "chosen_data/zillow/Zip_zhvi_uc_sfrcondo_tier_0.33_0.67_sm_sa_month.csv"
-      year: 2022
-      required_columns:
-        - "RegionID"
-        - "RegionName"
-        - "RegionType"
-        - "StateName"
-        - "State"
-        - "City"
-        - "Metro"
-        - "CountyName"
-      table_schema: "RegionID BIGINT, RegionName BIGINT, RegionType VARCHAR, StateName VARCHAR, State VARCHAR, City VARCHAR, Metro VARCHAR, CountyName VARCHAR, date VARCHAR, zhvi DOUBLE"
+
+  zhvi_sfr_zip:
+    type: zillow
+    path: "chosen_data/zillow/Zip_zhvi_uc_sfrcondo_tier_0.33_0.67_sm_sa_month.csv"
+    year: 2022
+    required_columns:
+      - "RegionID"
+      - "RegionName"
+      - "RegionType"
+      - "StateName"
+      - "State"
+      - "City"
+      - "Metro"
+      - "CountyName"
+    table_schema: "RegionID BIGINT, RegionName BIGINT, RegionType VARCHAR, StateName VARCHAR, State VARCHAR, City VARCHAR, Metro VARCHAR, CountyName VARCHAR, date VARCHAR, zhvi DOUBLE"
 
 # Transformation table configs
 transformations:
@@ -85,6 +86,7 @@ transformations:
     sql: > 
       SELECT 
           RegionName, 
+          StateName,
           zip, 
           date, 
           zhvi, 

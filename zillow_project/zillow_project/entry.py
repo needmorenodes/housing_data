@@ -17,9 +17,6 @@ def main():
     )
     args = parser.parse_args()
 
-    if args.download_config:
-        pass
-
     # Run the main pipeline
     if args.pipeline_config:
         pipeline = MedallionPipeline(args.pipeline_config)
