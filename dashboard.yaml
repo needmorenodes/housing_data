@@ -1,0 +1,4 @@
+# Database configuration
+database:
+  path: "data/medallion.db"
+  type: "duckdb"
